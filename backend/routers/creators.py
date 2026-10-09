@@ -536,3 +536,60 @@ def save_studio_project(
     conn.close()
     return StarterStudioProjectOut(**dict(row))
 
+# --- Brand Shortlist Endpoints ---
+@router.get("/me/shortlist", response_model=List[CreatorSummary])
+def get_brand_shortlist(current_user: dict = Depends(require_role("brand"))):
+    b_id = current_user.get("brand_id")
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT c.* FROM creators c
+        JOIN shortlists sl ON c.id = sl.creator_id
+        WHERE sl.brand_id = ?
+        ORDER BY sl.created_at DESC
+    """, (b_id,))
+    rows = cursor.fetchall()
+
+    shortlisted_creators = [build_creator_dict(r, cursor) for r in rows]
+    conn.close()
+    return shortlisted_creators
+
+@router.post("/{creator_id}/shortlist", response_model=dict, status_code=201)
+def shortlist_creator(
+    creator_id: str,
+    current_user: dict = Depends(require_role("brand"))
+):
+    b_id = current_user.get("brand_id")
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM creators WHERE id = ?", (creator_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Creator not found")
+
+    sl_id = f"sl_{uuid.uuid4().hex[:8]}"
+    cursor.execute("""
+        INSERT OR IGNORE INTO shortlists (id, brand_id, creator_id)
+        VALUES (?, ?, ?)
+    """, (sl_id, b_id, creator_id))
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "message": f"Creator '{creator_id}' shortlisted successfully"}
+
+@router.delete("/{creator_id}/shortlist", response_model=dict)
+def remove_shortlist_creator(
+    creator_id: str,
+    current_user: dict = Depends(require_role("brand"))
+):
+    b_id = current_user.get("brand_id")
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM shortlists WHERE brand_id = ? AND creator_id = ?", (b_id, creator_id))
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "message": f"Creator '{creator_id}' removed from shortlist"}
+
+

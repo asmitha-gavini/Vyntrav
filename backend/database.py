@@ -83,6 +83,27 @@ def get_db():
             created_at   TEXT DEFAULT CURRENT_TIMESTAMP
         );
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS shortlists (
+            id         TEXT PRIMARY KEY,
+            brand_id   TEXT NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+            creator_id TEXT NOT NULL REFERENCES creators(id) ON DELETE CASCADE,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(brand_id, creator_id)
+        );
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS project_messages (
+            id             TEXT PRIMARY KEY,
+            application_id TEXT NOT NULL REFERENCES brief_applications(id) ON DELETE CASCADE,
+            sender_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            sender_name    TEXT NOT NULL,
+            sender_role    TEXT NOT NULL,
+            text           TEXT NOT NULL,
+            created_at     TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
     conn.commit()
     return conn
+
 

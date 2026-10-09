@@ -6,7 +6,8 @@ from backend.schemas import (
     BriefSummary, BriefDetail, BriefCreate,
     BriefDraftRequest, BriefDraftResponse,
     CreatorMatch, Tool, Skill,
-    BriefApplicationCreate, BriefApplicationOut, BriefApplicationUpdate, DeliverySubmit
+    BriefApplicationCreate, BriefApplicationOut, BriefApplicationUpdate, DeliverySubmit,
+    ProjectMessageCreate, ProjectMessageOut
 )
 from backend.services.brief_ai import generate_brief_draft
 from backend.services.matcher import compute_creator_match
@@ -384,6 +385,10 @@ def submit_delivery(
     current_user: dict = Depends(require_role("creator"))
 ):
     c_id = current_user.get("creator_id")
+    url = delivery.delivery_url.strip()
+    if not (url.startswith("http://") or url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Delivery URL must start with http:// or https://")
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -398,7 +403,7 @@ def submit_delivery(
         UPDATE brief_applications
         SET delivery_url = ?, delivery_notes = ?, status = 'delivered', updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    """, (delivery.delivery_url.strip(), delivery.delivery_notes, application_id))
+    """, (url, delivery.delivery_notes, application_id))
 
     conn.commit()
 
@@ -412,4 +417,83 @@ def submit_delivery(
     updated_row = cursor.fetchone()
     conn.close()
     return BriefApplicationOut(**dict(updated_row))
+
+# --- Project Messaging Endpoints ---
+@router.get("/applications/{application_id}/messages", response_model=List[ProjectMessageOut])
+def get_application_messages(
+    application_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT ba.*, b.brand_id FROM brief_applications ba
+        JOIN briefs b ON ba.brief_id = b.id
+        WHERE ba.id = ?
+    """, (application_id,))
+    app_row = cursor.fetchone()
+
+    if not app_row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    is_creator = (current_user["role"] == "creator" and current_user.get("creator_id") == app_row["creator_id"])
+    is_brand = (current_user["role"] == "brand" and current_user.get("brand_id") == app_row["brand_id"])
+
+    if not (is_creator or is_brand):
+        conn.close()
+        raise HTTPException(status_code=403, detail="Not authorized to view messages for this project")
+
+    cursor.execute("""
+        SELECT * FROM project_messages
+        WHERE application_id = ?
+        ORDER BY created_at ASC
+    """, (application_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [ProjectMessageOut(**dict(r)) for r in rows]
+
+@router.post("/applications/{application_id}/messages", response_model=ProjectMessageOut, status_code=201)
+def post_application_message(
+    application_id: str,
+    msg: ProjectMessageCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT ba.*, b.brand_id FROM brief_applications ba
+        JOIN briefs b ON ba.brief_id = b.id
+        WHERE ba.id = ?
+    """, (application_id,))
+    app_row = cursor.fetchone()
+
+    if not app_row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    is_creator = (current_user["role"] == "creator" and current_user.get("creator_id") == app_row["creator_id"])
+    is_brand = (current_user["role"] == "brand" and current_user.get("brand_id") == app_row["brand_id"])
+
+    if not (is_creator or is_brand):
+        conn.close()
+        raise HTTPException(status_code=403, detail="Not authorized to post messages to this project")
+
+    msg_id = f"msg_{uuid.uuid4().hex[:8]}"
+    sender_name = current_user.get("display_name") or current_user.get("email")
+
+    cursor.execute("""
+        INSERT INTO project_messages (id, application_id, sender_user_id, sender_name, sender_role, text)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (msg_id, application_id, current_user["id"], sender_name, current_user["role"], msg.text.strip()))
+
+    conn.commit()
+
+    cursor.execute("SELECT * FROM project_messages WHERE id = ?", (msg_id,))
+    new_msg = cursor.fetchone()
+    conn.close()
+    return ProjectMessageOut(**dict(new_msg))
+
 

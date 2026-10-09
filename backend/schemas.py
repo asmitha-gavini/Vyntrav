@@ -318,3 +318,27 @@ class AuthConfigStatus(BaseModel):
     facebook_configured: bool
     instagram_configured: bool
 
+# --- Messaging & Shortlist Models ---
+class ProjectMessageCreate(BaseModel):
+    text: str = Field(..., min_length=1, max_length=2000)
+
+class ProjectMessageOut(BaseModel):
+    id: str
+    application_id: str
+    sender_user_id: str
+    sender_name: str
+    sender_role: str
+    text: str
+    created_at: str
+
+class ShortlistCreate(BaseModel):
+    creator_id: str
+
+class ShortlistOut(BaseModel):
+    id: str
+    brand_id: str
+    creator_id: str
+    creator: CreatorSummary
+    created_at: str
+
+
