@@ -21,15 +21,18 @@ from backend.services.oauth import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+IS_PROD_HOST = os.environ.get("FRONTEND_URL", "").startswith("https://") or os.environ.get("RENDER", "") != ""
+
 def set_session_cookie(response: Response, user_id: str, role: str):
     token = create_jwt_token(user_id, role)
-    # Set httpOnly cookie, 7 days expiration
+    samesite_val = "none" if IS_PROD_HOST else "lax"
+    secure_val = True if IS_PROD_HOST else False
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=token,
         httponly=True,
-        samesite="lax",
-        secure=False,  # Set True in production with HTTPS
+        samesite=samesite_val,
+        secure=secure_val,
         max_age=7 * 24 * 3600
     )
 
