@@ -12,18 +12,19 @@ app = FastAPI(
 
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
 
-# Enable CORS for exact frontend origins and all Vercel deployments
+allowed_origins = [
+    frontend_url,
+    "https://vyntrav.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        frontend_url,
-        "https://vyntrav.vercel.app",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173"
-    ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,14 +34,22 @@ app.add_middleware(
 def startup_event():
     ensure_db()
 
-# Mount routers
+# Mount routers at root level
 app.include_router(auth.router)
 app.include_router(meta.router)
 app.include_router(creators.router)
 app.include_router(briefs.router)
 app.include_router(dashboard.router)
 
+# Mount routers with /api prefix for dual compatibility
+app.include_router(auth.router, prefix="/api")
+app.include_router(meta.router, prefix="/api")
+app.include_router(creators.router, prefix="/api")
+app.include_router(briefs.router, prefix="/api")
+app.include_router(dashboard.router, prefix="/api")
+
 @app.get("/health", tags=["health"])
+@app.get("/api/health", tags=["health"])
 def health_check():
     return {"status": "ok", "database": "connected"}
 
