@@ -60,6 +60,12 @@ export async function draftBriefAI(prompt) {
   });
 }
 
+export async function summarizeBriefAI(briefId) {
+  return request(`/briefs/${briefId}/summary`, {
+    method: 'POST'
+  });
+}
+
 export async function fetchBriefMatches(briefId) {
   return request(`/briefs/${briefId}/matches`);
 }

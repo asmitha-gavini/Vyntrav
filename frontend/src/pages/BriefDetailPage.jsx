@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Cpu, Sparkles, CheckCircle2, Award, Send, Loader2, X, DollarSign } from 'lucide-react';
-import { fetchBriefById, fetchBriefMatches, applyToBrief } from '../api';
+import { fetchBriefById, fetchBriefMatches, applyToBrief, summarizeBriefAI } from '../api';
 import { useAuth } from '../context/AuthContext';
 
 export function BriefDetailPage() {
@@ -11,6 +11,11 @@ export function BriefDetailPage() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // AI Summary state
+  const [aiSummary, setAiSummary] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState(null);
 
   // Apply Modal state
   const [isApplyOpen, setIsApplyOpen] = useState(false);
@@ -37,6 +42,19 @@ export function BriefDetailPage() {
         setLoading(false);
       });
   }, [id]);
+
+  const handleSummarize = async () => {
+    setSummarizing(true);
+    setSummaryError(null);
+    try {
+      const res = await summarizeBriefAI(id);
+      setAiSummary(res.summary);
+    } catch (err) {
+      setSummaryError(err.message || 'Failed to generate AI summary.');
+    } finally {
+      setSummarizing(false);
+    }
+  };
 
   const handleApplySubmit = async (e) => {
     e.preventDefault();
@@ -175,8 +193,35 @@ export function BriefDetailPage() {
 
           {brief.description && (
             <div>
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Creative Description</h3>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Creative Description</h3>
+                {!aiSummary && (
+                  <button
+                    onClick={handleSummarize}
+                    disabled={summarizing}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                  >
+                    {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-purple-600" />}
+                    Summarize with AI
+                  </button>
+                )}
+              </div>
               <p className="text-xs text-slate-600 leading-relaxed">{brief.description}</p>
+            </div>
+          )}
+
+          {aiSummary && (
+            <div className="p-4 rounded-xl bg-purple-50/70 border border-purple-200 space-y-1 text-xs text-purple-950">
+              <div className="flex items-center gap-1.5 font-bold text-purple-800 text-[11px] uppercase tracking-wide">
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" /> Grounded AI Brief Summary
+              </div>
+              <p className="leading-relaxed">{aiSummary}</p>
+            </div>
+          )}
+
+          {summaryError && (
+            <div className="p-2 text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg">
+              {summaryError}
             </div>
           )}
         </div>
