@@ -10,9 +10,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
 
-# Enable CORS for exact frontend origins (no wildcard when allow_credentials=True)
+# Enable CORS for exact frontend origins and all Vercel deployments
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -23,6 +23,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173"
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -10,6 +10,7 @@ SEED_SCRIPT_PATH = BASE_DIR / "dataset" / "seed.py"
 
 def ensure_db():
     """Ensure marketplace.db exists and has the latest schema and tools."""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     needs_seed = False
     if not DB_PATH.exists():
         needs_seed = True
