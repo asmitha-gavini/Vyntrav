@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routers import meta, creators, briefs, auth, dashboard
 from backend.database import ensure_db
@@ -9,6 +9,25 @@ app = FastAPI(
     description="API connecting AI creators with brands and creative agencies.",
     version="1.0.0"
 )
+
+# Custom CORS middleware ensuring CORS headers are added on all requests and exceptions
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    origin = request.headers.get("origin", "")
+    if request.method == "OPTIONS":
+        response = Response(status_code=200)
+    else:
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            response = Response(content=f'{{"detail": "{str(exc)}"}}', status_code=500, media_type="application/json")
+
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
 
