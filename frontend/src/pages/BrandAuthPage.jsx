@@ -129,13 +129,7 @@ export function BrandAuthPage() {
           </button>
         </div>
 
-        {/* Social Auth */}
-        <SocialAuthButtons role="brand" />
 
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-slate-200 w-full" />
-          <span className="bg-white px-3 text-[11px] text-slate-400 font-medium absolute">Or continue with work email</span>
-        </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
