@@ -33,13 +33,28 @@ def check_rate_limit(ip: str, max_attempts: int = 5, window_sec: int = 60):
 def record_login_attempt(ip: str):
     login_attempts[ip].append(time.time())
 
+import bcrypt
+
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    try:
+        pwd_bytes = password.encode('utf-8')[:72]
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
+    except Exception:
+        return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     if not hashed_password:
         return False
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        pwd_bytes = plain_password.encode('utf-8')[:72]
+        hash_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(pwd_bytes, hash_bytes)
+    except Exception:
+        try:
+            return pwd_context.verify(plain_password, hashed_password)
+        except Exception:
+            return False
 
 def create_jwt_token(user_id: str, role: str) -> str:
     payload = {
