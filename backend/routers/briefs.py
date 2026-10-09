@@ -9,12 +9,13 @@ from backend.schemas import (
     BriefApplicationCreate, BriefApplicationOut, BriefApplicationUpdate, DeliverySubmit,
     ProjectMessageCreate, ProjectMessageOut
 )
-from backend.services.brief_ai import generate_brief_draft
+from backend.services.brief_ai import generate_brief_draft, generate_brief_summary
 from backend.services.matcher import compute_creator_match
 from backend.services.auth import require_role, get_current_user
 from backend.routers.creators import build_creator_dict
 
 router = APIRouter(prefix="/briefs", tags=["briefs"])
+
 
 def fetch_brief_detail_by_id(brief_id: str, cursor) -> BriefDetail:
     cursor.execute("""
@@ -174,6 +175,18 @@ def create_brief(brief: BriefCreate, current_user: dict = Depends(require_role("
 def draft_brief_ai(req: BriefDraftRequest):
     draft_data = generate_brief_draft(req.prompt)
     return BriefDraftResponse(**draft_data)
+
+@router.post("/{brief_id}/summary")
+def summarize_brief_ai(brief_id: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    b_detail = fetch_brief_detail_by_id(brief_id, cursor)
+    conn.close()
+    if not b_detail:
+        raise HTTPException(status_code=404, detail=f"Brief with ID '{brief_id}' not found")
+    summary = generate_brief_summary(b_detail.model_dump())
+    return summary
+
 
 @router.get("/{brief_id}/matches", response_model=List[CreatorMatch])
 def get_brief_matches(brief_id: str):

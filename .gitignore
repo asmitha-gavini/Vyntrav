@@ -1,0 +1,25 @@
+# Node dependencies & builds
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+frontend/dist-ssr/
+*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.db
+
+# Environment variables
+.env
+*.env
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp

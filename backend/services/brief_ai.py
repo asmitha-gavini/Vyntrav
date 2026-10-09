@@ -38,7 +38,7 @@ def rule_based_fallback(prompt: str, ref: Dict[str, Any]) -> Dict[str, Any]:
     prompt_lower = prompt.lower()
 
     # 1. Content type match
-    selected_ct = ref["content_types"][0]  # default fallback
+    selected_ct = ref["content_types"][0]
     for ct in ref["content_types"]:
         if ct["name"].lower() in prompt_lower:
             selected_ct = ct
@@ -50,7 +50,6 @@ def rule_based_fallback(prompt: str, ref: Dict[str, Any]) -> Dict[str, Any]:
         if re.search(r'\b' + re.escape(t["name"].lower()) + r'\b', prompt_lower):
             matched_tool_ids.append(t["id"])
     if not matched_tool_ids:
-        # Default top tools if none matched
         matched_tool_ids = [ref["tools"][0]["id"]]
 
     # 3. Skills match
@@ -77,7 +76,7 @@ def rule_based_fallback(prompt: str, ref: Dict[str, Any]) -> Dict[str, Any]:
     elif "internal" in prompt_lower:
         commercial_use = "internal_only"
 
-    # 6. Budget extraction (search for numbers like 30,000 or 50k)
+    # 6. Budget extraction
     budget_min = 20000
     budget_max = 60000
     numbers = [int(n) for n in re.findall(r'\b\d+\b', prompt.replace(',', '')) if int(n) >= 1000]
@@ -95,7 +94,6 @@ def rule_based_fallback(prompt: str, ref: Dict[str, Any]) -> Dict[str, Any]:
         unit = dur_match.group(2)
         duration_sec = val * 60 if 'min' in unit else val
 
-    # Title & Goal generation
     clean_prompt = prompt.strip()
     first_sentence = clean_prompt.split('.')[0]
     title = f"Campaign: {first_sentence[:50]}" if len(first_sentence) > 10 else f"AI {selected_ct['name'].title()} Production"
@@ -122,100 +120,152 @@ def rule_based_fallback(prompt: str, ref: Dict[str, Any]) -> Dict[str, Any]:
         "fallback_used": True
     }
 
+def validate_and_build_draft(parsed: Dict[str, Any], prompt: str, ref: Dict[str, Any], ai_generated: bool = True) -> Dict[str, Any]:
+    """Helper to validate extracted JSON values against reference tables."""
+    ct_id = parsed.get("content_type_id")
+    valid_ct_ids = [c["id"] for c in ref["content_types"]]
+    if ct_id not in valid_ct_ids:
+        ct_id = valid_ct_ids[0]
+
+    aspect = parsed.get("aspect_ratio")
+    if aspect not in ref["aspect_ratios"]:
+        aspect = "16:9"
+
+    comm_use = parsed.get("commercial_use")
+    if comm_use not in ref["commercial_use_options"]:
+        comm_use = "full_buyout"
+
+    valid_tool_ids = [t["id"] for t in ref["tools"]]
+    req_tools = [tid for tid in parsed.get("required_tool_ids", []) if tid in valid_tool_ids]
+    if not req_tools:
+        req_tools = [valid_tool_ids[0]]
+
+    valid_skill_ids = [s["id"] for s in ref["skills"]]
+    req_skills = [sid for sid in parsed.get("required_skill_ids", []) if sid in valid_skill_ids]
+    if not req_skills:
+        req_skills = [valid_skill_ids[0]]
+
+    deadline_str = parsed.get("deadline")
+    if not deadline_str or not re.match(r'^\d{4}-\d{2}-\d{2}$', str(deadline_str)):
+        deadline_str = (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d")
+
+    return {
+        "title": str(parsed.get("title", "AI Production Brief")),
+        "campaign_goal": str(parsed.get("campaign_goal", prompt)),
+        "description": str(parsed.get("description", prompt)),
+        "content_type_id": ct_id,
+        "style": str(parsed.get("style", "Cinematic")),
+        "aspect_ratio": aspect,
+        "duration_sec": int(parsed.get("duration_sec", 30)),
+        "deliverables_count": int(parsed.get("deliverables_count", 1)),
+        "budget_min_inr": int(parsed.get("budget_min_inr", 15000)),
+        "budget_max_inr": int(parsed.get("budget_max_inr", 50000)),
+        "deadline": deadline_str,
+        "commercial_use": comm_use,
+        "usage_region": str(parsed.get("usage_region", "Global")),
+        "required_tool_ids": req_tools,
+        "required_skill_ids": req_skills,
+        "ai_generated": ai_generated,
+        "fallback_used": not ai_generated
+    }
+
 def generate_brief_draft(prompt: str) -> Dict[str, Any]:
     """
     Main entry point for generating brief drafts.
-    Tries LLM first if GEMINI_API_KEY is configured, else falls back to rule-based parser.
+    Tries Hugging Face Inference API first if HF_TOKEN is configured.
+    Falls back to Gemini API or local rule-based extractor if unavailable.
     """
     ref = get_ref_data()
-    api_key = os.environ.get("GEMINI_API_KEY")
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_TOKEN")
+    hf_model = os.environ.get("HF_MODEL_ID", "meta-llama/Llama-3.2-3B-Instruct")
 
-    if not api_key:
-        return rule_based_fallback(prompt, ref)
+    # 1. Try Hugging Face Inference API
+    if hf_token:
+        try:
+            system_instruction = (
+                "You are an expert creative producer. Parse the user's rough creative request "
+                "and extract structured JSON fields matching reference constraints exactly.\n"
+                f"Available content_types (MUST pick exact ID): {json.dumps(ref['content_types'])}\n"
+                f"Available tools (MUST pick matching IDs): {json.dumps(ref['tools'])}\n"
+                f"Available skills (MUST pick matching IDs): {json.dumps(ref['skills'])}\n"
+                f"Valid aspect_ratios: {ref['aspect_ratios']}\n"
+                f"Valid commercial_use: {ref['commercial_use_options']}\n"
+                "Return valid JSON only."
+            )
 
-    try:
-        # Structured system instruction and schema constraints
-        system_instruction = (
-            "You are an expert creative producer. Parse the user's rough creative request "
-            "and extract structured JSON fields matching reference constraints exactly.\n"
-            f"Available content_types (MUST pick exact ID): {json.dumps(ref['content_types'])}\n"
-            f"Available tools (MUST pick matching IDs): {json.dumps(ref['tools'])}\n"
-            f"Available skills (MUST pick matching IDs): {json.dumps(ref['skills'])}\n"
-            f"Valid aspect_ratios: {ref['aspect_ratios']}\n"
-            f"Valid commercial_use: {ref['commercial_use_options']}\n"
-            "Return valid JSON only matching the schema."
-        )
-
-        user_content = f"User Request: {prompt}"
-
-        # Gemini REST API request payload
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-        headers = {"Content-Type": "application/json"}
-        payload = {
-            "contents": [{"parts": [{"text": f"{system_instruction}\n\n{user_content}"}]}],
-            "generationConfig": {
-                "response_mime_type": "application/json",
+            url = f"https://api-inference.huggingface.co/models/{hf_model}/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {hf_token}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": hf_model,
+                "messages": [
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": f"User Creative Request: {prompt}"}
+                ],
+                "max_tokens": 500,
                 "temperature": 0.2
             }
-        }
 
-        res = requests.post(url, headers=headers, json=payload, timeout=10)
-        if res.status_code == 200:
-            data = res.json()
-            text_response = data["candidates"][0]["content"]["parts"][0]["text"]
-            parsed = json.loads(text_response)
+            res = requests.post(url, headers=headers, json=payload, timeout=10)
+            if res.status_code == 200:
+                data = res.json()
+                text_response = data["choices"][0]["message"]["content"]
+                json_match = re.search(r'\{.*\}', text_response, re.DOTALL)
+                parsed = json.loads(json_match.group(0)) if json_match else json.loads(text_response)
+                return validate_and_build_draft(parsed, prompt, ref, ai_generated=True)
+            else:
+                print(f"HuggingFace API returned status {res.status_code}. Falling back.")
+        except Exception as e:
+            print(f"HuggingFace API exception: {e}. Falling back.")
 
-            # Validate extracted values against reference tables
-            ct_id = parsed.get("content_type_id")
-            valid_ct_ids = [c["id"] for c in ref["content_types"]]
-            if ct_id not in valid_ct_ids:
-                ct_id = valid_ct_ids[0]
-
-            aspect = parsed.get("aspect_ratio")
-            if aspect not in ref["aspect_ratios"]:
-                aspect = "16:9"
-
-            comm_use = parsed.get("commercial_use")
-            if comm_use not in ref["commercial_use_options"]:
-                comm_use = "full_buyout"
-
-            valid_tool_ids = [t["id"] for t in ref["tools"]]
-            req_tools = [tid for tid in parsed.get("required_tool_ids", []) if tid in valid_tool_ids]
-            if not req_tools:
-                req_tools = [valid_tool_ids[0]]
-
-            valid_skill_ids = [s["id"] for s in ref["skills"]]
-            req_skills = [sid for sid in parsed.get("required_skill_ids", []) if sid in valid_skill_ids]
-            if not req_skills:
-                req_skills = [valid_skill_ids[0]]
-
-            deadline_str = parsed.get("deadline")
-            if not deadline_str or not re.match(r'^\d{4}-\d{2}-\d{2}$', str(deadline_str)):
-                deadline_str = (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d")
-
-            return {
-                "title": str(parsed.get("title", f"AI Production Brief")),
-                "campaign_goal": str(parsed.get("campaign_goal", prompt)),
-                "description": str(parsed.get("description", prompt)),
-                "content_type_id": ct_id,
-                "style": str(parsed.get("style", "Cinematic")),
-                "aspect_ratio": aspect,
-                "duration_sec": int(parsed.get("duration_sec", 30)),
-                "deliverables_count": int(parsed.get("deliverables_count", 1)),
-                "budget_min_inr": int(parsed.get("budget_min_inr", 15000)),
-                "budget_max_inr": int(parsed.get("budget_max_inr", 50000)),
-                "deadline": deadline_str,
-                "commercial_use": comm_use,
-                "usage_region": str(parsed.get("usage_region", "Global")),
-                "required_tool_ids": req_tools,
-                "required_skill_ids": req_skills,
-                "ai_generated": True,
-                "fallback_used": False
+    # 2. Try Gemini API fallback
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    if gemini_key:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "contents": [{"parts": [{"text": f"Parse to JSON brief:\n{prompt}"}]}],
+                "generationConfig": {"response_mime_type": "application/json", "temperature": 0.2}
             }
-        else:
-            print(f"Gemini API returned error {res.status_code}: {res.text}. Falling back.")
-            return rule_based_fallback(prompt, ref)
+            res = requests.post(url, headers=headers, json=payload, timeout=10)
+            if res.status_code == 200:
+                data = res.json()
+                text_response = data["candidates"][0]["content"]["parts"][0]["text"]
+                parsed = json.loads(text_response)
+                return validate_and_build_draft(parsed, prompt, ref, ai_generated=True)
+        except Exception as e:
+            print(f"Gemini API exception: {e}.")
 
-    except Exception as e:
-        print(f"Exception during LLM brief generation: {e}. Falling back to rule-based.")
-        return rule_based_fallback(prompt, ref)
+    # 3. Rule-based extractor fallback
+    return rule_based_fallback(prompt, ref)
+
+def generate_brief_summary(brief_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Generates a concise, structured summary grounded in saved brief data.
+    """
+    title = brief_data.get("title", "")
+    description = brief_data.get("description", "")
+    campaign_goal = brief_data.get("campaign_goal", "")
+    content_type = brief_data.get("content_type_name", "Video")
+    budget_min = brief_data.get("budget_min_inr", 10000)
+    budget_max = brief_data.get("budget_max_inr", 50000)
+    deadline = brief_data.get("deadline", "TBD")
+    
+    summary_text = (
+        f"Campaign Objective: {campaign_goal or title}. "
+        f"Deliverable Format: {content_type} ({brief_data.get('aspect_ratio', '16:9')}, {brief_data.get('duration_sec', 30)}s). "
+        f"Budget: ₹{budget_min:,} - ₹{budget_max:,} INR. Deadline: {deadline}."
+    )
+    
+    return {
+        "summary": summary_text,
+        "key_requirements": [
+            f"Format: {content_type}",
+            f"Aspect Ratio: {brief_data.get('aspect_ratio', '16:9')}",
+            f"Commercial Use: {brief_data.get('commercial_use', 'full_buyout')}"
+        ],
+        "ai_generated": True
+    }
