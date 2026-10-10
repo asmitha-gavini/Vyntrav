@@ -70,122 +70,53 @@ export function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/60 text-slate-900 font-sans">
 
-      {/* SECTION 2 — HERO SECTION (Split Layout) */}
-      <section className="relative pt-12 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      {/* SECTION 2 — HERO SECTION (Clean Centered Layout) */}
+      <section className="relative pt-16 pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full text-center">
+        <div className="space-y-6">
           
-          {/* Left Column: Copy & Primary CTAs */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold tracking-wider uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              THE AI CREATOR MARKETPLACE
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
-              Your next great campaign starts with the <span className="text-indigo-600 underline decoration-indigo-200 decoration-4">right creator.</span>
-            </h1>
-
-            <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal max-w-2xl">
-              The right AI creators. The right creative brief. One seamless workflow. Discover specialist AI filmmakers, build production-ready briefs, and manage collaborations from first idea to final delivery.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 pt-2">
-              <Link
-                to="/creators"
-                className="px-7 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
-              >
-                Explore Creators
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-
-              <Link
-                to="/briefs/new"
-                className="px-7 py-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm border border-slate-300 shadow-xs flex items-center justify-center gap-2 transition-all"
-              >
-                <Zap className="w-4 h-4 text-purple-600" />
-                Build a Campaign Brief
-              </Link>
-            </div>
-
-            {/* Trust Statement */}
-            <div className="flex items-center gap-4 pt-4 text-xs text-slate-500 font-medium border-t border-slate-200/80">
-              <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Verified Tool Stacks</span>
-              </div>
-              <span className="text-slate-300">&bull;</span>
-              <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
-                <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                <span>Transparent Portfolio Matching</span>
-              </div>
-            </div>
-
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold tracking-wider uppercase shadow-2xs">
+            <Sparkles className="w-4 h-4 text-indigo-600" />
+            THE AI CREATOR MARKETPLACE
           </div>
 
-          {/* Right Column: Visual Product Composition */}
-          <div className="lg:col-span-5 relative">
-            
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xl space-y-4 relative z-10">
-              
-              {/* Card Header: Brief Connection */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Active Match Signal</span>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  94% Match Score
-                </span>
-              </div>
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.15] max-w-4xl mx-auto">
+            Your next great campaign starts with the <span className="text-indigo-600 underline decoration-indigo-200 decoration-4">right creator.</span>
+          </h1>
 
-              {/* Sample Brief Card */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Campaign Brief</div>
-                <div className="text-xs font-bold text-slate-900">Sustainable Streetwear Video Launch</div>
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-semibold border border-purple-200">Runway Gen-2</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">Midjourney v6</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">₹35,000 Budget</span>
-                </div>
-              </div>
+          <p className="text-base sm:text-xl text-slate-600 leading-relaxed font-normal max-w-3xl mx-auto">
+            The right AI creators. The right creative brief. One seamless workflow. Discover specialist AI filmmakers, build production-ready briefs, and manage collaborations from first idea to final delivery.
+          </p>
 
-              {/* Matched Creator Profile Mini-Card */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-900 to-slate-900 text-white flex items-center justify-between gap-3 shadow-md">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="https://picsum.photos/seed/cr_001/150"
-                    alt="Ananya Rao"
-                    className="w-11 h-11 rounded-xl object-cover border-2 border-indigo-400"
-                  />
-                  <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                      Ananya Rao
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    </div>
-                    <div className="text-[11px] text-indigo-200">AI Video Creator &bull; Top Match</div>
-                  </div>
-                </div>
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Link
+              to="/creators"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
+            >
+              Explore Creators
+              <ArrowRight className="w-4 h-4" />
+            </Link>
 
-                <Link
-                  to="/creators/cr_001"
-                  className="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[11px] font-bold shrink-0 transition-colors"
-                >
-                  Inspect Profile
-                </Link>
-              </div>
+            <Link
+              to="/briefs/new"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm border border-slate-300 shadow-xs flex items-center justify-center gap-2 transition-all"
+            >
+              <Zap className="w-4 h-4 text-purple-600" />
+              Build a Campaign Brief
+            </Link>
+          </div>
 
-              {/* Status Flow Badge */}
-              <div className="flex items-center justify-between text-[11px] p-2.5 rounded-xl bg-slate-100/70 text-slate-600 font-medium border border-slate-200/80">
-                <span>Workflow State:</span>
-                <span className="font-bold text-indigo-600 bg-white px-2 py-0.5 rounded shadow-2xs">Brief &rarr; Match &rarr; Escrow &rarr; Delivery</span>
-              </div>
-
+          {/* Trust Statement */}
+          <div className="flex items-center justify-center gap-6 pt-6 text-xs text-slate-500 font-medium border-t border-slate-200/80 max-w-xl mx-auto">
+            <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Verified Tool Stacks</span>
             </div>
-
-            {/* Decorative Offset Backdrop */}
-            <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl -z-10" />
+            <span className="text-slate-300">&bull;</span>
+            <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
+              <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+              <span>Transparent Portfolio Matching</span>
+            </div>
           </div>
 
         </div>
