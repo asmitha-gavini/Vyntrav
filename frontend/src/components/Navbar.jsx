@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sparkles, Users, Briefcase, PlusCircle, LayoutDashboard, LogOut, LogIn, UserPlus, Zap, ChevronDown, UserCheck, Building2, Compass } from 'lucide-react';
+import { Sparkles, Users, Briefcase, PlusCircle, LayoutDashboard, LogOut, LogIn, UserPlus, Zap, ChevronDown, UserCheck, Building2, Compass, Menu, X, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function Navbar() {
@@ -8,6 +8,7 @@ export function Navbar() {
   const navigate = useNavigate();
   const { user, logout, loginDemo } = useAuth();
   const [showDemoMenu, setShowDemoMenu] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
@@ -18,6 +19,7 @@ export function Navbar() {
 
   const handleDemoClick = async (role) => {
     setShowDemoMenu(false);
+    setMobileMenuOpen(false);
     try {
       await loginDemo(role);
       navigate('/dashboard');
@@ -64,7 +66,7 @@ export function Navbar() {
         </div>
       )}
 
-      <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-200">
+      <header className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Brand Logo */}
@@ -72,12 +74,11 @@ export function Navbar() {
             <img
               src="/logo.png"
               alt="Vyntrav"
-              className="w-10 h-10 rounded-xl object-contain bg-black p-1 border border-slate-800 shadow-md group-hover:scale-105 transition-transform"
+              className="w-9 h-9 rounded-xl object-contain bg-slate-950 p-1 border border-slate-800 shadow-sm group-hover:scale-105 transition-transform"
             />
             <div>
               <span className="font-extrabold text-xl text-slate-900 tracking-tight">Vyntrav</span>
-              <span className="text-xs px-1.5 py-0.5 ml-1.5 rounded bg-indigo-100 text-indigo-700 font-semibold border border-indigo-200">AI</span>
-              <span className="hidden sm:inline-block text-[10px] text-slate-400 font-semibold ml-1.5">x Kampus.VC</span>
+              <span className="text-[10px] px-1.5 py-0.5 ml-1.5 rounded bg-indigo-50 text-indigo-700 font-bold border border-indigo-200 uppercase tracking-wider">AI</span>
             </div>
           </Link>
 
@@ -85,53 +86,70 @@ export function Navbar() {
           <nav className="hidden md:flex items-center gap-1">
             <Link
               to="/creators"
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 isActive('/creators')
-                  ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <Users className="w-4 h-4" />
+              <Users className="w-3.5 h-3.5" />
               Find Creators
             </Link>
 
             <Link
               to="/tools"
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 isActive('/tools')
-                  ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <Compass className="w-4 h-4 text-indigo-600" />
-              AI Tools Directory
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-700 font-bold border border-indigo-200">
+              <Compass className="w-3.5 h-3.5 text-indigo-600" />
+              AI Tools
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 font-bold border border-slate-200">
                 250+
               </span>
             </Link>
 
             <Link
               to="/briefs"
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 isActive('/briefs')
-                  ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <Briefcase className="w-4 h-4" />
+              <Briefcase className="w-3.5 h-3.5" />
               Campaign Briefs
             </Link>
+
+            <a
+              href="#how-it-works"
+              onClick={(e) => {
+                if (location.pathname !== '/') {
+                  // If not on homepage, navigate home first
+                  return;
+                }
+                e.preventDefault();
+                const el = document.getElementById('how-it-works');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all flex items-center gap-1.5"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
+              How It Works
+            </a>
 
             {user && (
               <Link
                 to="/dashboard"
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                   isActive('/dashboard')
-                    ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                <LayoutDashboard className="w-4 h-4" />
+                <LayoutDashboard className="w-3.5 h-3.5" />
                 My Dashboard
               </Link>
             )}
@@ -246,17 +264,82 @@ export function Navbar() {
                 </Link>
 
                 <Link
-                  to="/login"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs transition-all hover:scale-105"
+                  to="/creators"
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs transition-all hover:scale-105"
                 >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  Sign Up
+                  <Users className="w-3.5 h-3.5" />
+                  Find Creators
                 </Link>
               </div>
             )}
 
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Toggle Navigation Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-4 space-y-3 animate-fade-in shadow-xl">
+            <Link
+              to="/creators"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-bold text-slate-800 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <Users className="w-4 h-4 text-indigo-600" />
+              Find Creators
+            </Link>
+
+            <Link
+              to="/tools"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-bold text-slate-800 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <Compass className="w-4 h-4 text-indigo-600" />
+              AI Tools Directory (250+)
+            </Link>
+
+            <Link
+              to="/briefs"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-bold text-slate-800 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <Briefcase className="w-4 h-4 text-indigo-600" />
+              Campaign Briefs
+            </Link>
+
+            <a
+              href="#how-it-works"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                const el = document.getElementById('how-it-works');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-bold text-slate-800 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <HelpCircle className="w-4 h-4 text-indigo-600" />
+              How It Works
+            </a>
+
+            <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+              <Link
+                to="/briefs/new"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 text-white font-bold text-xs text-center shadow-sm flex items-center justify-center gap-2"
+              >
+                <PlusCircle className="w-4 h-4 text-indigo-400" />
+                Build a Campaign Brief
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
     </>
   );
